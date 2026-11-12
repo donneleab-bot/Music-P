@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premium Audio Studio - Exact Crop</title>
+<title>Premium Audio Studio - URL Import Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-base: #050505; 
+    --bg-base: #050505;
     --glass-bg: rgba(20, 20, 20, 0.4);
     --glass-border: rgba(255, 255, 255, 0.08);
-    --text-base: #ffffff; 
-    --text-subdued: #a0a0a0; 
-    
-    --accent-color: 180, 150, 255; 
-    --bass-scale: 1; 
+    --text-base: #ffffff;
+    --text-subdued: #a0a0a0;
+    --accent-color: 180, 150, 255;
+    --glow-opacity: 0.4;
+    --glitch-offset: 0px;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,18 +25,14 @@
     user-select: none;
   }
 
-  /* --- ФОН --- */
   .global-bg {
     position: fixed; top: -10%; left: -10%; width: 120%; height: 120%;
-    background-size: cover;
-    background-position: center;
-    filter: blur(140px) brightness(0.15) saturate(120%); 
+    background-size: cover; background-position: center;
+    filter: blur(140px) brightness(0.15) saturate(120%);
     z-index: -2;
     transition: background-image 1.5s ease-in-out;
-    transform: scale(calc(1 + (var(--bass-scale) - 1) * 0.2));
-    transition: transform 0.1s ease-out;
   }
-  
+
   .vignette {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.9) 100%);
@@ -45,7 +41,6 @@
 
   .main-layout { display: flex; flex: 1; gap: 20px; min-height: 0; position: relative; z-index: 1; }
 
-  /* --- СТЕКЛО --- */
   .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(50px) saturate(150%);
@@ -55,44 +50,58 @@
     box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 0 20px 50px rgba(0,0,0,0.6);
   }
 
-  /* --- ЛЕВАЯ ПАНЕЛЬ --- */
   .sidebar { width: 380px; display: flex; flex-direction: column; overflow: hidden; }
-  .sidebar-header { padding: 28px 24px; font-size: 20px; font-weight: 800; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.5px; }
-  .add-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+  .sidebar-header { padding: 28px 24px; font-size: 20px; font-weight: 800; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.5px; position: relative; }
+  .add-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: relative; z-index: 10; }
   .add-btn:hover { background: rgba(var(--accent-color), 0.15); border-color: rgba(var(--accent-color), 0.4); transform: scale(1.05); box-shadow: 0 0 20px rgba(var(--accent-color), 0.2); }
   .track-list { flex: 1; overflow-y: auto; padding: 16px; }
-  
-  .track-item { 
-    display: flex; align-items: center; gap: 16px; padding: 12px; 
-    border-radius: 20px; cursor: pointer; transition: all 0.3s; 
-    margin-bottom: 8px; border: 1px solid transparent; position: relative; 
-    overflow: hidden; background: rgba(255,255,255,0.02); 
+
+  /* Меню загрузки */
+  .upload-menu {
+    position: absolute; top: 70px; right: 24px;
+    background: rgba(25, 25, 25, 0.95); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+    padding: 8px; display: none; flex-direction: column; gap: 4px;
+    z-index: 200; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    width: 240px;
   }
-  
+  .upload-menu.open { display: flex; }
+  .upload-menu-item {
+    padding: 12px 16px; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; font-weight: 600; color: var(--text-base);
+    transition: background 0.2s;
+  }
+  .upload-menu-item:hover { background: rgba(var(--accent-color), 0.2); color: white; }
+  .upload-menu-item svg { width: 20px; height: 20px; fill: currentColor; }
+
+  .track-item {
+    display: flex; align-items: center; gap: 16px; padding: 12px;
+    border-radius: 20px; cursor: pointer; transition: all 0.3s;
+    margin-bottom: 8px; border: 1px solid transparent; position: relative;
+    overflow: hidden; background: rgba(255,255,255,0.02);
+  }
   .track-item::before {
     content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: var(--track-color); opacity: 0.1; transition: opacity 0.3s; z-index: 0;
     pointer-events: none;
   }
-  
   .track-item > * { position: relative; z-index: 1; }
-
   .track-item:hover { background: rgba(255,255,255,0.04); transform: translateX(4px); }
   .track-item:hover::before { opacity: 0.2; }
-  
-  .track-item.active { 
-    background: rgba(255,255,255,0.08); 
-    border-color: rgba(255,255,255,0.1); 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+  .track-item.active {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   }
   .track-item.active::before { opacity: 0.3; }
-  
+
   .track-cover-small { width: 56px; height: 56px; background: #1a1a1a; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; position: relative; box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
   .track-cover-small img { width: 100%; height: 100%; object-fit: cover; display: none; }
   .track-cover-small.has-cover img { display: block; }
   .track-cover-small.has-cover svg { display: none; }
   .track-cover-small svg { width: 28px; height: 28px; fill: #555; }
-  
+
   .track-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
   .track-name { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; letter-spacing: -0.3px; }
   .track-artist { font-size: 13px; color: var(--text-subdued); font-weight: 500; }
@@ -107,7 +116,6 @@
   .more-btn:hover { background: rgba(255,255,255,0.15); color: white; }
   .more-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
-  /* === КОНТЕКСТНОЕ МЕНЮ === */
   .context-menu {
     position: absolute; background: rgba(25, 25, 25, 0.95); backdrop-filter: blur(20px);
     border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
@@ -116,7 +124,7 @@
     min-width: 180px;
   }
   .context-menu.open { display: flex; }
-  
+
   .context-item {
     padding: 10px 14px; border-radius: 8px; cursor: pointer;
     display: flex; align-items: center; gap: 10px;
@@ -126,26 +134,53 @@
   .context-item:hover { background: rgba(var(--accent-color), 0.2); color: white; }
   .context-item svg { width: 18px; height: 18px; fill: currentColor; }
 
-  /* --- ПРАВАЯ ПАНЕЛЬ --- */
   .now-playing-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden; }
+
+  .now-playing-panel::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 420px; height: 420px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(var(--accent-color), calc(var(--glow-opacity, 0.4) * 0.5)) 0%,
+      rgba(var(--accent-color), calc(var(--glow-opacity, 0.4) * 0.15)) 40%,
+      transparent 70%
+    );
+    filter: blur(50px);
+    z-index: 0;
+    pointer-events: none;
+    will-change: background, transform;
+  }
+
+  .vinyl-stage { position: relative; z-index: 3; }
+
+  .shake-wrapper {
+    width: 420px; height: 420px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    will-change: transform;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
 
   .spin-container {
     width: 420px; height: 420px;
     position: relative; display: flex; align-items: center; justify-content: center;
-    animation: spin 20s linear infinite; 
+    animation: spin 20s linear infinite;
     animation-play-state: paused;
-    transform: scale(var(--bass-scale));
-    transition: transform 0.15s ease-out;
+    will-change: transform;
   }
   .spin-container.playing { animation-play-state: running; }
 
   .vinyl-disc {
     width: 100%; height: 100%; border-radius: 50%;
-    background: 
+    background:
       radial-gradient(circle at 50% 50%, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.8) 40%, rgba(var(--accent-color), 0.15) 75%, rgba(0,0,0,0.95) 100%),
       repeating-linear-gradient(45deg, #050505, #050505 2px, #0a0a0a 2px, #0a0a0a 4px);
-    box-shadow: 
-      inset 0 0 60px rgba(0,0,0,0.9), 
+    box-shadow:
+      inset 0 0 60px rgba(0,0,0,0.9),
       inset 0 0 15px rgba(var(--accent-color), 0.2),
       0 0 50px rgba(var(--accent-color), 0.15),
       0 20px 60px rgba(0,0,0,0.9);
@@ -153,7 +188,7 @@
     border: 2px solid rgba(var(--accent-color), 0.15);
     overflow: hidden;
   }
-  
+
   .vinyl-disc::after {
     content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%;
     background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.02) 100%);
@@ -169,17 +204,15 @@
 
   .vinyl-cover {
     width: 55%; height: 55%; border-radius: 50%; background: #111;
-    z-index: 3; 
+    z-index: 3;
     overflow: hidden; display: flex; align-items: center; justify-content: center;
-    border: 6px solid #080808; 
+    border: 6px solid #080808;
     box-shadow: 0 0 30px rgba(var(--accent-color), 0.4), inset 0 0 20px rgba(0,0,0,0.8);
     position: relative;
   }
-  
-  .vinyl-cover.full-cover {
-    width: 100%; height: 100%; border: none; border-radius: 50%;
-  }
-  
+
+  .vinyl-cover.full-cover { width: 100%; height: 100%; border: none; border-radius: 50%; }
+
   .full-cover-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     border-radius: 50%;
@@ -189,55 +222,77 @@
   }
   .vinyl-cover.full-cover .full-cover-overlay { display: block; }
 
-  /* Стили для картинок в плеере */
-  .img-normal, .img-half, .img-gif { 
-    width: 100%; height: 100%; display: none;
-    position: absolute; top: 0; left: 0;
-  }
-  
-  .img-normal, .img-gif {
-    object-fit: cover; 
-  }
-  
-  /* Для дихотомии */
-  .img-half {
-    object-fit: contain; /* Позволяет картинке быть меньше или больше круга */
+  .img-normal, .img-half, .img-gif {
+    position: absolute; top: 50%; left: 50%;
+    width: auto; height: auto;
+    max-width: none; max-height: none;
+    display: none;
     transform-origin: center center;
+    transform: translate(-50%, -50%);
+    color: transparent;
+    font-size: 0;
+    transition: opacity 0.2s ease-in-out, filter 0.1s ease-out;
   }
-
-  .img-normal { z-index: 3; }
-  .img-gif { z-index: 3; }
-  
-  /* Дихотомия - наложение */
-  .img-half.silent { opacity: 1; z-index: 1; }
-  .img-half.sound { opacity: 0; z-index: 2; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-  
-  .vinyl-cover.is-playing .img-half.silent { opacity: 0; }
-  .vinyl-cover.is-playing .img-half.sound { opacity: 1; }
-
   .vinyl-cover.has-cover .img-normal,
   .vinyl-cover.has-cover .img-half,
   .vinyl-cover.has-cover .img-gif { display: block; }
-  
+
+  .img-normal { z-index: 3; }
+  .img-gif { z-index: 3; }
+  .img-half.silent { opacity: 1; z-index: 1; }
+  .img-half.sound { opacity: 0; z-index: 2; }
+  .vinyl-cover.vocal-active .img-half.silent { opacity: 0; }
+  .vinyl-cover.vocal-active .img-half.sound { opacity: 1; }
+
   .vinyl-cover.has-cover svg { display: none; }
   .vinyl-cover svg { width: 60px; height: 60px; fill: #444; }
-  
-  .vinyl-hole { position: absolute; width: 18px; height: 18px; background: #000; border-radius: 50%; z-index: 6; box-shadow: inset 0 2px 5px rgba(0,0,0,0.9); border: 2px solid rgba(255,255,255,0.1); }
+
+  .glitch-layer {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    z-index: 6;
+    transition: opacity 0.08s;
+  }
+  .glitch-red {
+    background-color: rgba(255, 0, 0, 0.7);
+    background-blend-mode: multiply;
+    filter: drop-shadow(2px 0 0 red);
+  }
+  .glitch-blue {
+    background-color: rgba(0, 150, 255, 0.7);
+    background-blend-mode: multiply;
+    filter: drop-shadow(-2px 0 0 blue);
+  }
+  .vinyl-cover.glitch-active .glitch-red {
+    opacity: 0.7;
+    transform: translate(calc(-50% - var(--glitch-offset, 0px)), -50%);
+  }
+  .vinyl-cover.glitch-active .glitch-blue {
+    opacity: 0.7;
+    transform: translate(calc(-50% + var(--glitch-offset, 0px)), -50%);
+  }
 
   @keyframes spin { 100% { transform: rotate(360deg); } }
 
-  /* --- НИЖНЯЯ ПАНЕЛЬ --- */
   .player-bar { height: 110px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; flex-shrink: 0; z-index: 2; }
   .player-left { width: 30%; display: flex; align-items: center; gap: 16px; }
   .player-center { width: 40%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
   .controls { display: flex; align-items: center; gap: 24px; }
-  
+
   .ctrl-btn { background: none; border: none; color: var(--text-subdued); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; }
   .ctrl-btn svg { width: 22px; height: 22px; fill: currentColor; transition: fill 0.2s, transform 0.1s; }
   .ctrl-btn:hover { color: var(--text-base); transform: scale(1.1); }
   .ctrl-btn.active { color: rgb(var(--accent-color)); filter: drop-shadow(0 0 8px rgba(var(--accent-color), 0.5)); }
   .ctrl-btn:active { transform: scale(0.95); }
-  
+
   .ctrl-btn.repeat-one::after {
     content: '1'; position: absolute; bottom: -4px; right: -4px;
     font-size: 10px; font-weight: 800; background: rgb(var(--accent-color));
@@ -274,11 +329,12 @@
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
   input[type="file"] { display: none; }
 
-  /* === МОДАЛЬНОЕ ОКНО РЕДАКТОРА === */
+  /* МОДАЛЬНЫЕ ОКНА */
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; z-index: 1000; }
   .modal-overlay.open { display: flex; }
   .modal-content { background: rgba(20,20,20,0.95); backdrop-filter: blur(50px); border: 1px solid rgba(255,255,255,0.08); width: 900px; border-radius: 32px; padding: 40px; box-shadow: 0 40px 120px rgba(0,0,0,0.9); }
   .editor-layout { display: flex; gap: 30px; margin-bottom: 30px; }
+  
   .editor-cover-section { width: 260px; display: flex; flex-direction: column; gap: 15px; }
   .editor-cover-preview { width: 100%; aspect-ratio: 1; border-radius: 24px; background: #111; border: 2px dashed rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: all 0.3s; }
   .editor-cover-preview:hover { border-color: rgb(var(--accent-color)); background: rgba(var(--accent-color), 0.05); }
@@ -287,34 +343,66 @@
   .editor-cover-preview.has-cover .upload-icon { display: none; }
   .upload-icon { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-subdued); font-size: 13px; font-weight: 500; text-align: center; }
   .upload-icon svg { width: 36px; height: 36px; fill: currentColor; }
-  .editor-audio-section { flex: 1; display: flex; flex-direction: column; }
-  .editor-title-input { width: 100%; background: transparent; border: none; border-bottom: 2px solid rgba(255,255,255,0.1); color: white; font-size: 26px; font-weight: 800; padding-bottom: 12px; margin-bottom: 24px; outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.3s; }
+
+  .editor-audio-section { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .editor-title-input { 
+    width: 100%; background: transparent; border: none; 
+    border-bottom: 2px solid rgba(255,255,255,0.1); 
+    color: white; font-size: 24px; font-weight: 800; 
+    padding-bottom: 12px; margin-bottom: 24px; 
+    outline: none; font-family: 'Inter', sans-serif; 
+    transition: border-color 0.3s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .editor-title-input:focus { border-color: rgb(var(--accent-color)); }
-  .trim-container { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 32px; position: relative; margin-bottom: 24px; }
-  .trim-waveform { height: 100px; background: rgba(255,255,255,0.02); border-radius: 16px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-  .trim-waveform-bars { display: flex; gap: 4px; height: 100%; align-items: center; opacity: 0.1; width: 100%; justify-content: space-around; padding: 0 10px; }
-  .trim-waveform-bars div { width: 6px; background: white; border-radius: 3px; }
-  .trim-selection { position: absolute; top: 0; bottom: 0; background: rgba(var(--accent-color), 0.15); border-left: 3px solid rgb(var(--accent-color)); border-right: 3px solid rgb(var(--accent-color)); left: 0%; right: 0%; pointer-events: none; }
-  .dual-slider { position: relative; width: 100%; height: 30px; margin-top: 24px; }
-  .dual-slider input[type=range] { position: absolute; width: 100%; pointer-events: none; appearance: none; height: 4px; background: none; top: 12px; }
-  .dual-slider input[type=range]::-webkit-slider-thumb { pointer-events: all; appearance: none; width: 26px; height: 26px; border-radius: 50%; background: rgb(var(--accent-color)); cursor: pointer; box-shadow: 0 0 15px rgba(var(--accent-color), 0.6); margin-top: -11px; border: 3px solid white; }
-  .dual-slider input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #333; border-radius: 2px; }
-  .trim-times { display: flex; justify-content: space-between; margin-top: 10px; }
-  .trim-input-group { display: flex; flex-direction: column; gap: 8px; }
-  .trim-input-group label { font-size: 13px; color: var(--text-subdued); font-weight: 600; }
-  .trim-input-group input { background: rgba(0,0,0,0.8); border: 1px solid #333; color: white; padding: 12px 16px; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 15px; outline: none; width: 110px; font-weight: 700; transition: border-color 0.3s; }
-  .trim-input-group input:focus { border-color: rgb(var(--accent-color)); }
-  .trim-preview { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
-  .trim-preview button { background: white; color: black; border-radius: 50%; width: 48px; height: 48px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: transform 0.2s, box-shadow 0.2s; }
+
+  .trim-container { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 24px; position: relative; margin-bottom: 24px; }
+  .trim-preview { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .trim-preview button { background: white; color: black; border-radius: 50%; width: 44px; height: 44px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
   .trim-preview button:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+  .trim-filename { font-size: 14px; color: var(--text-subdued); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .trim-waveform { 
+    height: 100px; background: rgba(255,255,255,0.02); 
+    border-radius: 16px; position: relative; overflow: hidden; 
+    display: flex; align-items: center; justify-content: center; 
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .trim-waveform-bars { 
+    display: flex; gap: 3px; height: 100%; align-items: center; 
+    width: 100%; justify-content: space-between; padding: 0 12px; 
+    opacity: 0.4;
+  }
+  .trim-waveform-bars div { 
+    width: 4px; background: rgb(var(--accent-color)); 
+    border-radius: 2px; transition: height 0.1s; 
+  }
+  .trim-selection { 
+    position: absolute; top: 0; bottom: 0; 
+    background: rgba(var(--accent-color), 0.15); 
+    border-left: 2px solid rgb(var(--accent-color)); 
+    border-right: 2px solid rgb(var(--accent-color)); 
+    left: 0%; right: 0%; pointer-events: none; 
+  }
+
+  .dual-slider { position: relative; width: 100%; height: 30px; margin-top: 20px; }
+  .dual-slider input[type=range] { position: absolute; width: 100%; pointer-events: none; appearance: none; height: 4px; background: none; top: 12px; }
+  .dual-slider input[type=range]::-webkit-slider-thumb { pointer-events: all; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: rgb(var(--accent-color)); cursor: pointer; box-shadow: 0 0 15px rgba(var(--accent-color), 0.6); margin-top: -10px; border: 2px solid white; }
+  .dual-slider input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  .trim-times { display: flex; justify-content: space-between; margin-top: 10px; }
+  .trim-input-group { display: flex; flex-direction: column; gap: 6px; }
+  .trim-input-group label { font-size: 12px; color: var(--text-subdued); font-weight: 600; }
+  .trim-input-group input { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 14px; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; width: 100px; font-weight: 700; transition: border-color 0.3s; }
+  .trim-input-group input:focus { border-color: rgb(var(--accent-color)); }
+
   .modal-actions { display: flex; justify-content: flex-end; gap: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 24px; }
-  .btn { padding: 16px 32px; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; border: none; transition: all 0.3s; }
+  .btn { padding: 14px 28px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; transition: all 0.3s; }
   .btn-cancel { background: transparent; color: var(--text-base); border: 1px solid rgba(255,255,255,0.2); }
   .btn-cancel:hover { border-color: var(--text-base); background: rgba(255,255,255,0.05); }
   .btn-save { background: rgb(var(--accent-color)); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
   .btn-save:hover { filter: brightness(1.1); transform: scale(1.02); box-shadow: 0 0 20px rgba(var(--accent-color), 0.4); }
 
-  /* === МОДАЛЬНОЕ ОКНО ОБЛОЖКИ === */
   .cover-modal-content { width: 600px; text-align: left; }
   .cover-modal-title { font-size: 24px; font-weight: 800; margin-bottom: 20px; text-align: center; }
   .cover-tabs { display: flex; gap: 10px; margin-bottom: 24px; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 12px; }
@@ -330,61 +418,60 @@
   .simple-cover-preview.has-cover img { display: block; }
   .simple-cover-preview.has-cover .upload-icon { display: none; }
 
-  /* ДИХОТОМИЯ (Два круга) */
-  .dichotomy-circles-container {
-    display: flex; gap: 20px; justify-content: center; margin-bottom: 20px;
-  }
-  
-  .crop-circle-wrapper {
-    display: flex; flex-direction: column; align-items: center; gap: 10px;
-  }
-
-  .crop-circle-mask {
-    width: 200px; height: 200px; border-radius: 50%;
-    position: relative; overflow: hidden;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-    border: 2px solid rgba(var(--accent-color), 0.5);
-    cursor: grab; background: #111;
-    display: flex; align-items: center; justify-content: center;
-  }
+  .dichotomy-circles-container { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
+  .crop-circle-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .crop-circle-mask { width: 200px; height: 200px; border-radius: 50%; position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); border: 2px solid rgba(var(--accent-color), 0.5); cursor: grab; background: #111; display: flex; align-items: center; justify-content: center; }
   .crop-circle-mask:active { cursor: grabbing; }
-  
-  /* Картинка в редакторе */
-  .crop-circle-mask img {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform-origin: center center;
-    pointer-events: none;
-    display: none;
-    width: 100%; 
-    height: auto;
-  }
-  
+  .crop-circle-mask img { position: absolute; top: 50%; left: 50%; width: auto; height: auto; max-width: none; max-height: none; transform-origin: center center; transform: translate(-50%, -50%); pointer-events: none; display: none; color: transparent; font-size: 0; }
   .crop-circle-mask.has-img img { display: block; }
-  
-  .crop-circle-mask .upload-icon {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    pointer-events: none;
-  }
+  .crop-circle-mask .upload-icon { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
   .crop-circle-mask.has-img .upload-icon { display: none; }
-
   .circle-label { font-weight: 700; color: var(--text-base); font-size: 14px; }
-  
+
   .crop-controls { margin-top: 20px; display: flex; gap: 20px; width: 100%; }
   .crop-control-group { flex: 1; background: rgba(0,0,0,0.3); padding: 16px; border-radius: 16px; }
   .crop-control-group label { display: block; font-size: 13px; color: var(--text-subdued); margin-bottom: 8px; font-weight: 600; }
   .crop-control-group input { width: 100%; cursor: pointer; accent-color: rgb(var(--accent-color)); }
-  
+
   .full-cover-preview { width: 250px; height: 250px; border-radius: 50%; background: #111; margin: 0 auto 24px; border: 2px dashed rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; }
   .full-cover-preview:hover { border-color: rgb(var(--accent-color)); background: rgba(var(--accent-color), 0.05); }
   .full-cover-preview img { width: 100%; height: 100%; object-fit: cover; display: none; }
   .full-cover-preview.has-cover img { display: block; }
   .full-cover-preview.has-cover .upload-icon { display: none; }
-  
+
   .crop-slider-container { margin-top: 20px; text-align: center; }
   .crop-slider-container label { display: block; font-size: 13px; color: var(--text-subdued); margin-bottom: 8px; font-weight: 600; }
   .crop-slider-container input { width: 80%; cursor: pointer; accent-color: rgb(var(--accent-color)); }
+
+  /* Оверлей извлечения аудио */
+  .extract-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px);
+    z-index: 5000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .extract-overlay.open { display: flex; }
+  .extract-spinner {
+    width: 60px; height: 60px;
+    border: 4px solid rgba(var(--accent-color), 0.2);
+    border-top-color: rgb(var(--accent-color));
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .extract-text { font-size: 16px; font-weight: 600; color: var(--text-subdued); }
+  .extract-filename { font-size: 13px; color: var(--text-subdued); opacity: 0.6; max-width: 400px; text-align: center; word-break: break-word; }
+
+  /* Окно ввода ссылки */
+  .url-modal-content { width: 500px; }
+  .url-modal-title { font-size: 22px; font-weight: 800; margin-bottom: 20px; text-align: center; }
+  .url-input { width: 100%; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 16px; border-radius: 12px; font-size: 16px; outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.3s; margin-bottom: 20px; }
+  .url-input:focus { border-color: rgb(var(--accent-color)); }
+  .url-hint { font-size: 12px; color: var(--text-subdued); margin-top: -10px; margin-bottom: 20px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -396,41 +483,63 @@
     <div class="sidebar glass-panel">
       <div class="sidebar-header">
         Моя музыка
-        <button class="add-btn" id="uploadBtn" title="Загрузить трек">
+        <button class="add-btn" id="uploadBtn" title="Загрузить">
           <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </button>
-        <input type="file" id="fileInput" accept="audio/*">
+        
+        <!-- Выпадающее меню загрузки -->
+        <div class="upload-menu" id="uploadMenu">
+          <div class="upload-menu-item" id="menuUploadAudio">
+            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+            Загрузить аудио
+          </div>
+          <div class="upload-menu-item" id="menuUploadVideo">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            Извлечь звук из видео
+          </div>
+          <div class="upload-menu-item" id="menuUploadLink">
+            <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+            Добавить по ссылке
+          </div>
+        </div>
+
+        <!-- Скрытые инпуты -->
+        <input type="file" id="fileInputAudio" accept="audio/*">
+        <input type="file" id="fileInputVideo" accept="video/*">
       </div>
       <div class="track-list" id="trackList"></div>
     </div>
 
     <div class="now-playing-panel glass-panel">
       <div class="vinyl-stage" id="vinylStage">
-        <div class="spin-container" id="spinContainer">
-          <div class="vinyl-disc" id="vinylDisc">
-            <div class="vinyl-cover" id="vinylCover">
-              <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-              
-              <img src="" id="imgNormal" class="img-normal" alt="cover">
-              <img src="" id="imgSilent" class="img-half silent" alt="silent">
-              <img src="" id="imgSound" class="img-half sound" alt="sound">
-              <img src="" id="imgGif" class="img-gif" alt="gif">
-              
-              <div class="full-cover-overlay"></div>
+        <div class="shake-wrapper" id="shakeWrapper">
+          <div class="spin-container" id="spinContainer">
+            <div class="vinyl-disc" id="vinylDisc">
+              <div class="vinyl-cover" id="vinylCover">
+                <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+
+                <img src="" id="imgNormal" class="img-normal" alt="">
+                <img src="" id="imgSilent" class="img-half silent" alt="">
+                <img src="" id="imgSound" class="img-half sound" alt="">
+                <img src="" id="imgGif" class="img-gif" alt="">
+
+                <div class="glitch-layer glitch-red" id="glitchRed"></div>
+                <div class="glitch-layer glitch-blue" id="glitchBlue"></div>
+
+                <div class="full-cover-overlay"></div>
+              </div>
             </div>
-            <div class="vinyl-hole"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- НИЖНЯЯ ПАНЕЛЬ -->
   <div class="player-bar glass-panel">
     <div class="player-left">
       <div class="track-cover-small" id="playerCoverSmall" style="width: 72px; height: 72px;">
         <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-        <img src="" id="playerCoverImg" alt="cover">
+        <img src="" id="playerCoverImg" alt="">
       </div>
       <div class="track-info"><div class="track-name" id="playerTitle" style="font-size: 17px;">Ничего не играет</div><div class="track-artist" id="playerArtist">-</div></div>
     </div>
@@ -453,7 +562,7 @@
           <svg viewBox="0 0 24 24" id="repeatIcon"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
         </button>
       </div>
-      
+
       <div class="progress-row">
         <span id="currentTime">0:00</span>
         <div class="slider-container" id="progressContainer">
@@ -482,7 +591,6 @@
 
   <audio id="audio" crossorigin="anonymous"></audio>
 
-  <!-- КОНТЕКСТНОЕ МЕНЮ -->
   <div class="context-menu" id="contextMenu">
     <div class="context-item" id="menuEditTrack">
       <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -500,7 +608,7 @@
       <div class="editor-layout">
         <div class="editor-cover-section">
           <div class="editor-cover-preview" id="editorCoverPreview">
-            <img src="" id="editorCoverImg" alt="cover">
+            <img src="" id="editorCoverImg" alt="">
             <div class="upload-icon">
               <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
               Нажми, чтобы<br>загрузить обложку
@@ -511,28 +619,23 @@
 
         <div class="editor-audio-section">
           <input type="text" class="editor-title-input" id="editorTitle" placeholder="Название трека" value="Новый трек">
-          
+
           <div class="trim-container">
             <div class="trim-preview">
               <button id="previewPlayBtn">▶</button>
-              <div style="font-size: 14px; color: var(--text-subdued);" id="editorFileName">Файл не выбран</div>
+              <div class="trim-filename" id="editorFileName">Файл не выбран</div>
             </div>
-            
+
             <div class="trim-waveform" id="waveform">
-              <div class="trim-waveform-bars">
-                 <div style="height:40%;"></div><div style="height:70%;"></div><div style="height:30%;"></div><div style="height:90%;"></div>
-                 <div style="height:50%;"></div><div style="height:60%;"></div><div style="height:20%;"></div><div style="height:80%;"></div>
-                 <div style="height:45%;"></div><div style="height:65%;"></div><div style="height:35%;"></div><div style="height:85%;"></div>
-                 <div style="height:55%;"></div><div style="height:75%;"></div><div style="height:25%;"></div><div style="height:95%;"></div>
-              </div>
+              <div class="trim-waveform-bars" id="waveformBars"></div>
               <div class="trim-selection" id="trimSelection"></div>
             </div>
-            
+
             <div class="dual-slider">
               <input type="range" id="startRange" min="0" max="100" value="0" step="0.1">
               <input type="range" id="endRange" min="0" max="100" value="100" step="0.1">
             </div>
-            
+
             <div class="trim-times">
               <div class="trim-input-group"><label>Начало</label><input type="text" id="startTimeInput" value="0:00"></div>
               <div class="trim-input-group"><label>Конец</label><input type="text" id="endTimeInput" value="0:00"></div>
@@ -548,11 +651,10 @@
     </div>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО ОБЛОЖКИ -->
   <div class="modal-overlay" id="coverModal">
     <div class="modal-content cover-modal-content">
       <div class="cover-modal-title">Настройка обложки</div>
-      
+
       <div class="cover-tabs">
         <div class="cover-tab active" data-tab="normal">Обычная</div>
         <div class="cover-tab" data-tab="dichotomy">Кадрирование</div>
@@ -560,10 +662,9 @@
         <div class="cover-tab" data-tab="full">Полная</div>
       </div>
 
-      <!-- Обычная -->
       <div class="tab-content active" id="tab-normal">
         <div class="simple-cover-preview" id="normalPreview">
-          <img src="" id="normalImg" alt="cover">
+          <img src="" id="normalImg" alt="">
           <div class="upload-icon">
             <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
             Загрузить картинку
@@ -572,38 +673,33 @@
         <input type="file" id="normalInput" accept="image/*">
       </div>
 
-      <!-- Кадрирование (Дихотомия) -->
       <div class="tab-content" id="tab-dichotomy">
         <div class="dichotomy-circles-container">
-          
-          <!-- Левый круг (Тишина) -->
           <div class="crop-circle-wrapper">
             <div class="crop-circle-mask" id="cropCircleLeft">
               <div class="upload-icon">
                 <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; fill: white; opacity: 0.5;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
               </div>
-              <img src="" id="cropImgLeft">
+              <img src="" id="cropImgLeft" alt="">
             </div>
-            <div class="circle-label">Тишина</div>
+            <div class="circle-label">Тишина (Нет вокала)</div>
             <button class="btn btn-save" onclick="document.getElementById('cropInputLeft').click()" style="padding: 6px 16px; font-size: 12px;">Загрузить</button>
             <input type="file" id="cropInputLeft" accept="image/*" style="display: none;">
           </div>
 
-          <!-- Правый круг (Звук) -->
           <div class="crop-circle-wrapper">
             <div class="crop-circle-mask" id="cropCircleRight">
               <div class="upload-icon">
                 <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; fill: white; opacity: 0.5;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
               </div>
-              <img src="" id="cropImgRight">
+              <img src="" id="cropImgRight" alt="">
             </div>
-            <div class="circle-label">Звук</div>
+            <div class="circle-label">Звук (Есть вокал)</div>
             <button class="btn btn-save" onclick="document.getElementById('cropInputRight').click()" style="padding: 6px 16px; font-size: 12px;">Загрузить</button>
             <input type="file" id="cropInputRight" accept="image/*" style="display: none;">
           </div>
-
         </div>
-        
+
         <div class="crop-controls">
           <div class="crop-control-group">
             <label>Масштаб (Тишина): <span id="leftScaleVal">100%</span></label>
@@ -616,10 +712,9 @@
         </div>
       </div>
 
-      <!-- GIF -->
       <div class="tab-content" id="tab-gif">
         <div class="simple-cover-preview" id="gifPreview">
-          <img src="" id="gifImg" alt="gif">
+          <img src="" id="gifImg" alt="">
           <div class="upload-icon">
             <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
             Загрузить GIF
@@ -628,10 +723,9 @@
         <input type="file" id="gifInput" accept="image/gif">
       </div>
 
-      <!-- Полная обложка -->
       <div class="tab-content" id="tab-full">
         <div class="full-cover-preview" id="fullPreview">
-          <img src="" id="fullImg" alt="cover">
+          <img src="" id="fullImg" alt="">
           <div class="upload-icon">
             <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
             Загрузить картинку
@@ -651,55 +745,74 @@
     </div>
   </div>
 
+  <!-- Окно ввода ссылки -->
+  <div class="modal-overlay" id="urlModal">
+    <div class="modal-content url-modal-content">
+      <div class="url-modal-title">Добавить по ссылке</div>
+      <input type="text" class="url-input" id="urlInput" placeholder="https://www.youtube.com/watch?v=...">
+      <div class="url-hint">
+        Вставьте ссылку на видео или аудио с YouTube, VK, SoundCloud, TikTok и других платформ.
+        <br><span style="opacity: 0.7;">(Работает через ваш персональный сервер Cobalt. Ссылки должны быть публичными.)</span>
+      </div>
+      <div class="modal-actions" style="border: none; padding-top: 0;">
+        <button class="btn btn-cancel" id="cancelUrlBtn">Отмена</button>
+        <button class="btn btn-save" id="importUrlBtn">Импортировать</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="extract-overlay" id="extractOverlay">
+    <div class="extract-spinner"></div>
+    <div class="extract-text" id="extractText">Извлекаю звук из видео...</div>
+    <div class="extract-filename" id="extractFilename"></div>
+  </div>
+
 <script>
-  // --- ВСЕ ПЕРЕМЕННЫЕ ДЛЯ КАДРИРОВАНИЯ ---
+  const EDITOR_CIRCLE_SIZE = 200;
   let editingCoverTrack = null;
   let coverMode = 'normal';
-  
-  let normalUrl = '';
-  let silentUrl = '';
-  let soundUrl = '';
-  let gifUrl = '';
-  let fullUrl = '';
-
+  let normalUrl = '', silentUrl = '', soundUrl = '', gifUrl = '', fullUrl = '';
   let leftPosX = 0, leftPosY = 0, leftScale = 1;
   let rightPosX = 0, rightPosY = 0, rightScale = 1;
 
-  // Функция для обновления масштаба (визуал в модалке)
+  function getFitScale(imgEl, containerSize) {
+    if (!imgEl.naturalWidth || !imgEl.naturalHeight) return 1;
+    return containerSize / Math.min(imgEl.naturalWidth, imgEl.naturalHeight);
+  }
+  function buildTransform(px, py, scale) {
+    return `translate(-50%, -50%) translate(${px}px, ${py}px) scale(${scale})`;
+  }
+
   window.updateCrop = function() {
-    // Левый круг
-    if (document.getElementById('cropImgLeft').src) {
-      const lScaleVal = document.getElementById('leftScale').value / 100;
-      leftScale = lScaleVal;
-      document.getElementById('cropImgLeft').style.transform = `translate(calc(-50% + ${leftPosX}px), calc(-50% + ${leftPosY}px)) scale(${leftScale})`;
+    const li = document.getElementById('cropImgLeft');
+    if (li.src && li.naturalWidth) {
+      leftScale = document.getElementById('leftScale').value / 100;
+      const fit = getFitScale(li, EDITOR_CIRCLE_SIZE);
+      li.style.transform = buildTransform(leftPosX, leftPosY, fit * leftScale);
     }
-
-    // Правый круг
-    if (document.getElementById('cropImgRight').src) {
-      const rScaleVal = document.getElementById('rightScale').value / 100;
-      rightScale = rScaleVal;
-      document.getElementById('cropImgRight').style.transform = `translate(calc(-50% + ${rightPosX}px), calc(-50% + ${rightPosY}px)) scale(${rightScale})`;
+    const ri = document.getElementById('cropImgRight');
+    if (ri.src && ri.naturalWidth) {
+      rightScale = document.getElementById('rightScale').value / 100;
+      const fit = getFitScale(ri, EDITOR_CIRCLE_SIZE);
+      ri.style.transform = buildTransform(rightPosX, rightPosY, fit * rightScale);
     }
-
-    // Полная обложка
-    if (document.getElementById('fullImg').src) {
+    const fi = document.getElementById('fullImg');
+    if (fi.src) {
       const fScaleVal = document.getElementById('fullScale').value / 100;
-      document.getElementById('fullImg').style.transform = `scale(${fScaleVal})`;
+      fi.style.transform = `scale(${fScaleVal})`;
     }
   };
 
-  // Главная функция открытия окна обложки
   function openCoverModal(trackElement) {
     editingCoverTrack = trackElement;
     const coverDataStr = trackElement.dataset.cover;
-    
-    // Сброс
+
     document.getElementById('normalImg').src = ''; document.getElementById('normalPreview').classList.remove('has-cover');
     document.getElementById('cropImgLeft').src = ''; document.getElementById('cropCircleLeft').classList.remove('has-img');
     document.getElementById('cropImgRight').src = ''; document.getElementById('cropCircleRight').classList.remove('has-img');
     document.getElementById('gifImg').src = ''; document.getElementById('gifPreview').classList.remove('has-cover');
     document.getElementById('fullImg').src = ''; document.getElementById('fullPreview').classList.remove('has-cover');
-    
+
     normalUrl = ''; silentUrl = ''; soundUrl = ''; gifUrl = ''; fullUrl = '';
     document.getElementById('leftScale').value = 100;
     document.getElementById('rightScale').value = 100;
@@ -707,7 +820,7 @@
     document.getElementById('leftScaleVal').innerText = '100%';
     document.getElementById('rightScaleVal').innerText = '100%';
     document.getElementById('fullScaleVal').innerText = '100%';
-    
+
     leftPosX = 0; leftPosY = 0; leftScale = 1;
     rightPosX = 0; rightPosY = 0; rightScale = 1;
 
@@ -715,7 +828,6 @@
       try {
         let data = JSON.parse(coverDataStr);
         coverMode = data.mode || 'normal';
-        
         if (coverMode === 'normal') {
           normalUrl = data.url;
           document.getElementById('normalImg').src = normalUrl;
@@ -727,28 +839,34 @@
         } else if (coverMode === 'dichotomy') {
           silentUrl = data.silent;
           soundUrl = data.sound;
-          
           if (silentUrl) {
-            document.getElementById('cropImgLeft').src = silentUrl;
+            const li = document.getElementById('cropImgLeft');
+            li.src = silentUrl;
             document.getElementById('cropCircleLeft').classList.add('has-img');
-            leftPosX = data.leftX || 0;
-            leftPosY = data.leftY || 0;
+            leftPosX = (data.leftX || 0) * EDITOR_CIRCLE_SIZE;
+            leftPosY = (data.leftY || 0) * EDITOR_CIRCLE_SIZE;
             leftScale = data.leftScale || 1;
             document.getElementById('leftScale').value = leftScale * 100;
             document.getElementById('leftScaleVal').innerText = Math.round(leftScale * 100) + '%';
           }
-          
           if (soundUrl) {
-            document.getElementById('cropImgRight').src = soundUrl;
+            const ri = document.getElementById('cropImgRight');
+            ri.src = soundUrl;
             document.getElementById('cropCircleRight').classList.add('has-img');
-            rightPosX = data.rightX || 0;
-            rightPosY = data.rightY || 0;
+            rightPosX = (data.rightX || 0) * EDITOR_CIRCLE_SIZE;
+            rightPosY = (data.rightY || 0) * EDITOR_CIRCLE_SIZE;
             rightScale = data.rightScale || 1;
             document.getElementById('rightScale').value = rightScale * 100;
             document.getElementById('rightScaleVal').innerText = Math.round(rightScale * 100) + '%';
           }
-          updateCrop();
-
+          const imgs = [document.getElementById('cropImgLeft'), document.getElementById('cropImgRight')];
+          let pending = imgs.filter(i => i.src).length;
+          const done = () => { if (--pending <= 0) updateCrop(); };
+          imgs.forEach(i => {
+            if (!i.src) return;
+            if (i.complete && i.naturalWidth) done();
+            else i.onload = done;
+          });
         } else if (coverMode === 'full') {
           fullUrl = data.url;
           document.getElementById('fullImg').src = fullUrl;
@@ -771,20 +889,23 @@
     coverModal.classList.add('open');
   }
 
-  // --- ТЕПЕРЬ ВСЕ ОСТАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
   const audio = document.getElementById('audio');
   const trackList = document.getElementById('trackList');
   const spinContainer = document.getElementById('spinContainer');
+  const shakeWrapper = document.getElementById('shakeWrapper');
+  const vinylDisc = document.getElementById('vinylDisc');
   const vinylCover = document.getElementById('vinylCover');
   const playerCoverSmall = document.getElementById('playerCoverSmall');
   const playerCoverImg = document.getElementById('playerCoverImg');
   const globalBg = document.getElementById('globalBg');
-  
+  const glitchRed = document.getElementById('glitchRed');
+  const glitchBlue = document.getElementById('glitchBlue');
+
   const imgNormal = document.getElementById('imgNormal');
   const imgSilent = document.getElementById('imgSilent');
   const imgSound = document.getElementById('imgSound');
   const imgGif = document.getElementById('imgGif');
-  
+
   const currentTimeEl = document.getElementById('currentTime');
   const totalTimeEl = document.getElementById('totalTime');
   const progressInput = document.getElementById('progressInput');
@@ -797,14 +918,14 @@
   const speedBtn = document.getElementById('speedBtn');
   const speedOptions = [1, 1.25, 1.5, 2, 0.75];
   let speedIndex = 0;
-  
+
   let isPlaying = false;
   let currentTrackObj = null;
   let isShuffle = false;
-  let repeatMode = 0; 
+  let repeatMode = 0;
   let isTimeLeft = false;
   let lastVolume = 1;
-  
+
   let tempAudioUrl = null;
   let tempAudioDuration = 0;
   let trimStartPercent = 0;
@@ -812,32 +933,147 @@
   let currentMenuTrack = null;
   const contextMenu = document.getElementById('contextMenu');
 
-  // === АУДИО АНАЛИЗАТОР ===
-  let audioContext, analyser, sourceNode, animationFrameId;
+  // === АУДИО-АНАЛИЗАТОР ===
+  let audioContext, analyser, filterNode, sourceNode, animationFrameId;
+  let isVocalDetected = false;
+  let holdTimer = null;
+  const HOLD_TIME_MS = 150;
+  const NOISE_FLOOR_DB = -35;
+  const MIN_RMS_THRESHOLD = 0.025;
+
+  let smoothLow = 0, smoothMid = 0, smoothHigh = 0;
+  let currentScale = 1, targetScale = 1;
+  let currentRotation = 0, targetRotation = 0;
+  let currentBrightness = 100, targetBrightness = 100;
+  let currentGlow = 0.4;
+  let currentBlur = 0;
+
+  let lastHighHit = 0;
+  let lastMidHit = 0;
 
   function initAudioAnalyzer() {
     if (audioContext) return;
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256; 
-    analyser.smoothingTimeConstant = 0.7;
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.15;
+
+    filterNode = audioContext.createBiquadFilter();
+    filterNode.type = 'bandpass';
+    filterNode.frequency.value = 1200;
+    filterNode.Q.value = 0.8;
+
     if (!sourceNode) {
       sourceNode = audioContext.createMediaElementSource(audio);
-      sourceNode.connect(analyser);
-      analyser.connect(audioContext.destination);
+      sourceNode.connect(audioContext.destination);
+      sourceNode.connect(filterNode);
+      filterNode.connect(analyser);
     }
   }
 
-  function animateBass() {
-    if (!analyser) return;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(dataArray);
-    let bassSum = 0;
-    for (let i = 0; i < 10; i++) bassSum += dataArray[i];
-    let bassAvg = bassSum / 10;
-    let scale = 1 + (bassAvg / 255) * 0.05;
-    document.documentElement.style.setProperty('--bass-scale', scale);
-    animationFrameId = requestAnimationFrame(animateBass);
+  function calcEnergy(freqData, startBin, endBin) {
+    let sum = 0;
+    for (let i = startBin; i < endBin; i++) sum += freqData[i];
+    let avg = sum / (endBin - startBin);
+    return Math.min(1, avg / 180);
+  }
+
+  function detectAudio() {
+    if (!analyser || !isPlaying) return;
+
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(freqData);
+
+    const lowEnergy = calcEnergy(freqData, 1, 12);
+    const midEnergy = calcEnergy(freqData, 12, 93);
+    const highEnergy = calcEnergy(freqData, 93, 372);
+
+    smoothLow += (lowEnergy - smoothLow) * 0.4;
+    smoothMid += (midEnergy - smoothMid) * 0.4;
+    smoothHigh += (highEnergy - smoothHigh) * 0.5;
+
+    targetScale = 1.0 + smoothLow * 0.35;
+    let shakeX = 0, shakeY = 0;
+    if (smoothLow > 0.6) {
+      const intensity = (smoothLow - 0.6) / 0.4;
+      shakeX = (Math.random() - 0.5) * 20 * intensity;
+      shakeY = (Math.random() - 0.5) * 20 * intensity;
+    }
+    if (smoothLow > 0.75) {
+      currentBlur = Math.min(4, smoothLow * 5);
+    } else {
+      currentBlur *= 0.85;
+    }
+
+    if (midEnergy > 0.55 && performance.now() - lastMidHit > 90) {
+      lastMidHit = performance.now();
+      const angle = (Math.random() - 0.5) * 12;
+      targetRotation = currentRotation + angle;
+    }
+    currentRotation += (targetRotation - currentRotation) * 0.15;
+
+    if (highEnergy > 0.45 && performance.now() - lastHighHit > 70) {
+      lastHighHit = performance.now();
+      targetBrightness = 100 + highEnergy * 80;
+      vinylCover.classList.add('glitch-active');
+      vinylCover.style.setProperty('--glitch-offset', (highEnergy * 8) + 'px');
+
+      const activeImg = imgSound.src ? imgSound : (imgNormal.src ? imgNormal : null);
+      if (activeImg && activeImg.src) {
+        glitchRed.style.backgroundImage = `url(${activeImg.src})`;
+        glitchBlue.style.backgroundImage = `url(${activeImg.src})`;
+      }
+    }
+    targetBrightness += (100 - targetBrightness) * 0.2;
+    if (targetBrightness < 105 && vinylCover.classList.contains('glitch-active')) {
+      vinylCover.classList.remove('glitch-active');
+    }
+
+    const totalEnergy = (smoothLow + smoothMid + smoothHigh) / 3;
+    currentGlow += ((0.3 + totalEnergy * 0.8) - currentGlow) * 0.15;
+    document.documentElement.style.setProperty('--glow-opacity', currentGlow);
+
+    currentScale += (targetScale - currentScale) * 0.35;
+    currentBrightness += (targetBrightness - currentBrightness) * 0.4;
+
+    shakeWrapper.style.transform =
+      `scale(${currentScale}) translate(${shakeX}px, ${shakeY}px) rotate(${currentRotation}deg)`;
+
+    vinylDisc.style.filter = `brightness(${currentBrightness}%)`;
+
+    const blurStr = currentBlur > 0.1 ? `blur(${currentBlur}px)` : 'none';
+    imgNormal.style.filter = blurStr;
+    imgGif.style.filter = blurStr;
+    imgSilent.style.filter = blurStr;
+    imgSound.style.filter = blurStr;
+
+    const timeData = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(timeData);
+    let sum = 0;
+    for (let i = 0; i < timeData.length; i++) sum += timeData[i] * timeData[i];
+    let rms = Math.sqrt(sum / timeData.length);
+
+    const noiseLinear = Math.pow(10, NOISE_FLOOR_DB / 20);
+    const currentThreshold = Math.max(MIN_RMS_THRESHOLD, noiseLinear);
+
+    if (rms > currentThreshold) {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+      if (!isVocalDetected) {
+        isVocalDetected = true;
+        vinylCover.classList.add('vocal-active');
+      }
+    } else {
+      if (isVocalDetected && !holdTimer) {
+        holdTimer = setTimeout(() => {
+          isVocalDetected = false;
+          vinylCover.classList.remove('vocal-active');
+          holdTimer = null;
+        }, HOLD_TIME_MS);
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(detectAudio);
   }
 
   function getColorFromImage(imgUrl, callback) {
@@ -883,16 +1119,13 @@
     });
   }
 
-  // === ТРЕКИ ===
   function createTrackElement(name, artist, url, coverDataStr = '', startTime = 0, endTime = null) {
     const newTrack = document.createElement('div');
     newTrack.className = 'track-item';
-    
     let coverData = { mode: 'normal', url: '' };
     if (coverDataStr) {
       try { coverData = JSON.parse(coverDataStr); } catch(e) { coverData = { mode: 'normal', url: coverDataStr }; }
     }
-
     newTrack.dataset.url = url;
     newTrack.dataset.name = name;
     newTrack.dataset.artist = artist;
@@ -900,19 +1133,16 @@
     newTrack.dataset.startTime = startTime;
     newTrack.dataset.endTime = endTime || '';
 
-    let thumbUrl = '';
-    let colorSourceUrl = '';
-
-    if (coverData.mode === 'normal' || coverData.mode === 'crop' || coverData.mode === 'full') { 
-      thumbUrl = coverData.url; colorSourceUrl = coverData.url; 
-    }
-    else if (coverData.mode === 'gif') { thumbUrl = coverData.url; colorSourceUrl = coverData.url; }
+    let thumbUrl = '', colorSourceUrl = '';
+    if (coverData.mode === 'normal' || coverData.mode === 'crop' || coverData.mode === 'full') {
+      thumbUrl = coverData.url; colorSourceUrl = coverData.url;
+    } else if (coverData.mode === 'gif') { thumbUrl = coverData.url; colorSourceUrl = coverData.url; }
     else if (coverData.mode === 'dichotomy') { thumbUrl = coverData.sound; colorSourceUrl = coverData.sound; }
 
     newTrack.innerHTML = `
       <div class="track-cover-small ${thumbUrl ? 'has-cover' : ''}">
         <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-        <img src="${thumbUrl}" alt="cover">
+        <img src="${thumbUrl}" alt="">
       </div>
       <div class="track-info">
         <div class="track-name">${name}</div>
@@ -922,23 +1152,19 @@
         <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
       </button>
     `;
-    
     if (colorSourceUrl) {
       getColorFromImage(colorSourceUrl, (colorStr) => {
         newTrack.style.setProperty('--track-color', `rgba(${colorStr}, 1)`);
       });
     }
-
     newTrack.onclick = (e) => {
       if (e.target.closest('.more-btn')) return;
       selectTrack(newTrack);
     };
-
     newTrack.querySelector('.more-btn').onclick = (e) => {
       e.stopPropagation();
       openContextMenu(e, newTrack);
     };
-    
     return newTrack;
   }
 
@@ -954,7 +1180,6 @@
   function selectTrack(element) {
     document.querySelectorAll('.track-item').forEach(el => el.classList.remove('active'));
     element.classList.add('active');
-
     const name = element.dataset.name;
     const artist = element.dataset.artist;
     const url = element.dataset.url;
@@ -966,36 +1191,27 @@
     document.getElementById('playerArtist').textContent = artist;
 
     applyCoverToPlayer(coverDataStr);
-
     audio.src = url;
-    
-    // Обработка ошибки currentTime
+
     audio.addEventListener('loadedmetadata', () => {
-      if (startTime > 0 && !isNaN(startTime)) {
-        audio.currentTime = startTime;
-      }
+      if (startTime > 0 && !isNaN(startTime)) audio.currentTime = startTime;
     }, { once: true });
 
     currentTrackObj = { startTime, endTime };
     audio.playbackRate = speedOptions[speedIndex];
 
     if (!isPlaying) togglePlay();
-    else {
-      audio.play();
-      setPlayingState(true);
-    }
+    else { audio.play(); setPlayingState(true); }
   }
 
   function applyCoverToPlayer(coverDataStr) {
     imgNormal.src = ''; imgSilent.src = ''; imgSound.src = ''; imgGif.src = '';
-    vinylCover.classList.remove('has-cover', 'is-playing', 'full-cover');
+    vinylCover.classList.remove('has-cover', 'is-playing', 'full-cover', 'vocal-active', 'glitch-active');
     vinylCover.querySelector('.full-cover-overlay').style.display = 'none';
-    
-    // Сброс трансформаций
-    imgNormal.style.transform = 'none';
-    imgGif.style.transform = 'none';
-    imgSilent.style.transform = 'none';
-    imgSound.style.transform = 'none';
+    imgNormal.style.transform = 'translate(-50%, -50%)';
+    imgGif.style.transform = 'translate(-50%, -50%)';
+    imgSilent.style.transform = 'translate(-50%, -50%)';
+    imgSound.style.transform = 'translate(-50%, -50%)';
 
     if (!coverDataStr) {
       playerCoverSmall.classList.remove('has-cover');
@@ -1006,7 +1222,6 @@
 
     let data;
     try { data = JSON.parse(coverDataStr); } catch(e) { data = { mode: 'normal', url: coverDataStr }; }
-
     vinylCover.classList.add('has-cover');
     playerCoverSmall.classList.add('has-cover');
 
@@ -1014,28 +1229,31 @@
       imgNormal.src = data.url;
       playerCoverImg.src = data.url;
       setThemeFromImage(data.url);
-    } 
-    else if (data.mode === 'gif') {
+    } else if (data.mode === 'gif') {
       imgGif.src = data.url;
       playerCoverImg.src = data.url;
       setThemeFromImage(data.url);
-    } 
-    else if (data.mode === 'dichotomy') {
+    } else if (data.mode === 'dichotomy') {
+      const rect = vinylCover.getBoundingClientRect();
+      const W = rect.width || 1, H = rect.height || 1;
       imgSilent.src = data.silent;
-      imgSilent.style.transform = `translate(calc(-50% + ${data.leftX || 0}px), calc(-50% + ${data.leftY || 0}px)) scale(${data.leftScale || 1})`;
-      
       imgSound.src = data.sound;
-      imgSound.style.transform = `translate(calc(-50% + ${data.rightX || 0}px), calc(-50% + ${data.rightY || 0}px)) scale(${data.rightScale || 1})`;
-      
+      const applyFit = (imgEl, px, py, userScale) => {
+        const doApply = () => {
+          const fit = getFitScale(imgEl, Math.min(W, H));
+          imgEl.style.transform = buildTransform(px * W, py * H, fit * userScale);
+        };
+        if (imgEl.complete && imgEl.naturalWidth) doApply();
+        else imgEl.onload = doApply;
+      };
+      applyFit(imgSilent, data.leftX || 0, data.leftY || 0, data.leftScale || 1);
+      applyFit(imgSound, data.rightX || 0, data.rightY || 0, data.rightScale || 1);
       playerCoverImg.src = data.sound;
       setThemeFromImage(data.sound);
-      
-      if (isPlaying) vinylCover.classList.add('is-playing');
-    }
-    else if (data.mode === 'full') {
+    } else if (data.mode === 'full') {
       vinylCover.classList.add('full-cover');
       imgNormal.src = data.url;
-      imgNormal.style.transform = `scale(${data.scale || 1})`; 
+      imgNormal.style.transform = `translate(-50%, -50%) scale(${data.scale || 1})`;
       playerCoverImg.src = data.url;
       setThemeFromImage(data.url);
       vinylCover.querySelector('.full-cover-overlay').style.display = 'block';
@@ -1051,8 +1269,9 @@
   }
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.context-menu') && !e.target.closest('.more-btn')) {
+    if (!e.target.closest('.context-menu') && !e.target.closest('.more-btn') && !e.target.closest('.add-btn')) {
       contextMenu.classList.remove('open');
+      document.getElementById('uploadMenu').classList.remove('open');
     }
   });
 
@@ -1060,7 +1279,6 @@
     contextMenu.classList.remove('open');
     if (currentMenuTrack) openEditor(currentMenuTrack);
   });
-
   document.getElementById('menuChangeCover').addEventListener('click', () => {
     contextMenu.classList.remove('open');
     if (currentMenuTrack) openCoverModal(currentMenuTrack);
@@ -1074,12 +1292,23 @@
     if (audio.paused) {
       audio.play();
       setPlayingState(true);
-      animateBass(); 
+      detectAudio();
     } else {
       audio.pause();
       setPlayingState(false);
       cancelAnimationFrame(animationFrameId);
-      document.documentElement.style.setProperty('--bass-scale', 1); 
+      document.documentElement.style.setProperty('--glow-opacity', 0.4);
+      vinylCover.classList.remove('vocal-active', 'glitch-active');
+      shakeWrapper.style.transform = 'translate(0, 0) rotate(0deg) scale(1)';
+      vinylDisc.style.filter = 'brightness(100%)';
+      imgNormal.style.filter = 'none';
+      imgGif.style.filter = 'none';
+      imgSilent.style.filter = 'none';
+      imgSound.style.filter = 'none';
+      currentScale = 1; currentRotation = 0; currentBrightness = 100; currentBlur = 0;
+      clearTimeout(holdTimer);
+      holdTimer = null;
+      isVocalDetected = false;
     }
   }
 
@@ -1087,55 +1316,39 @@
     isPlaying = state;
     const playIcon = document.getElementById('playIcon');
     const playBtn = document.getElementById('playBtn');
-    
     if (state) {
       playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
       spinContainer.classList.add('playing');
       playBtn.classList.add('playing');
-      vinylCover.classList.add('is-playing');
     } else {
       playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
       spinContainer.classList.remove('playing');
       playBtn.classList.remove('playing');
-      vinylCover.classList.remove('is-playing');
     }
   }
-  
+
   document.getElementById('playBtn').addEventListener('click', togglePlay);
 
   audio.addEventListener('timeupdate', () => {
     if (!currentTrackObj) return;
-    
     if (currentTrackObj.endTime && audio.currentTime >= currentTrackObj.endTime) {
       handleTrackEnd();
       return;
     }
-    
     const start = currentTrackObj.startTime;
     const end = currentTrackObj.endTime || audio.duration;
-    
     if (isNaN(end) || isNaN(audio.currentTime)) return;
-
     const total = end - start;
     const current = audio.currentTime - start;
-    
     let percent = (current / total) * 100;
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
-
     progressInput.value = percent;
     progressFill.style.width = percent + '%';
     progressThumb.style.left = percent + '%';
-    
-    if (isTimeLeft) {
-      currentTimeEl.textContent = '-' + formatTime(audio.duration - audio.currentTime);
-    } else {
-      currentTimeEl.textContent = formatTime(audio.currentTime);
-    }
-    
-    if (!isNaN(audio.duration)) {
-      totalTimeEl.textContent = formatTime(end);
-    }
+    if (isTimeLeft) currentTimeEl.textContent = '-' + formatTime(audio.duration - audio.currentTime);
+    else currentTimeEl.textContent = formatTime(audio.currentTime);
+    if (!isNaN(audio.duration)) totalTimeEl.textContent = formatTime(end);
   });
 
   totalTimeEl.addEventListener('click', () => {
@@ -1149,7 +1362,6 @@
       audio.play();
     } else goToNextTrack();
   }
-  
   audio.addEventListener('ended', handleTrackEnd);
 
   progressInput.addEventListener('input', (e) => {
@@ -1159,7 +1371,6 @@
     progressThumb.style.left = percent + '%';
     const start = currentTrackObj.startTime;
     const end = currentTrackObj.endTime || audio.duration;
-    
     if (!isNaN(start) && !isNaN(end)) {
       audio.currentTime = start + ((end - start) * (percent / 100));
     }
@@ -1171,7 +1382,6 @@
     lastVolume = percent;
     volumeFill.style.width = (percent * 100) + '%';
     volumeThumb.style.left = (percent * 100) + '%';
-    
     if (percent === 0) {
       volumeIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
     } else if (percent < 0.5) {
@@ -1206,7 +1416,7 @@
     let activeIndex = items.findIndex(item => item.classList.contains('active'));
     if (isShuffle) {
       let randomIndex;
-      do { randomIndex = Math.floor(Math.random() * items.length); } 
+      do { randomIndex = Math.floor(Math.random() * items.length); }
       while (randomIndex === activeIndex && items.length > 1);
       items[randomIndex].click();
     } else {
@@ -1238,7 +1448,6 @@
     else { repeatBtn.classList.add('active'); repeatIcon.innerHTML = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>'; }
   });
 
-  // === РЕДАКТОР ТРЕКА ===
   const editorModal = document.getElementById('editorModal');
   const editorTitle = document.getElementById('editorTitle');
   const editorFileName = document.getElementById('editorFileName');
@@ -1251,26 +1460,159 @@
   const startTimeInput = document.getElementById('startTimeInput');
   const endTimeInput = document.getElementById('endTimeInput');
   const previewPlayBtn = document.getElementById('previewPlayBtn');
-  const trimAudio = new Audio(); 
-  let editingTrackElement = null; 
+  const waveformBars = document.getElementById('waveformBars');
+  const trimAudio = new Audio();
+  let editingTrackElement = null;
   let currentEditorCoverUrl = '';
 
-  document.getElementById('uploadBtn').addEventListener('click', () => {
-    document.getElementById('fileInput').click();
+  // === УЛУЧШЕННАЯ ВОЛНА ===
+  function generateWaveformBars() {
+    waveformBars.innerHTML = '';
+    for (let i = 0; i < 80; i++) {
+      const bar = document.createElement('div');
+      const height = 20 + Math.random() * 80;
+      bar.style.height = height + '%';
+      bar.style.opacity = 0.3 + Math.random() * 0.7;
+      waveformBars.appendChild(bar);
+    }
+  }
+  generateWaveformBars();
+
+  // === МЕНЮ ЗАГРУЗКИ ===
+  const uploadBtn = document.getElementById('uploadBtn');
+  const uploadMenu = document.getElementById('uploadMenu');
+  const fileInputAudio = document.getElementById('fileInputAudio');
+  const fileInputVideo = document.getElementById('fileInputVideo');
+
+  uploadBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    uploadMenu.classList.toggle('open');
   });
 
-  document.getElementById('fileInput').addEventListener('change', (e) => {
+  document.getElementById('menuUploadAudio').addEventListener('click', () => {
+    uploadMenu.classList.remove('open');
+    fileInputAudio.click();
+  });
+
+  document.getElementById('menuUploadVideo').addEventListener('click', () => {
+    uploadMenu.classList.remove('open');
+    fileInputVideo.click();
+  });
+
+  document.getElementById('menuUploadLink').addEventListener('click', () => {
+    uploadMenu.classList.remove('open');
+    document.getElementById('urlModal').classList.add('open');
+  });
+
+  // === ОКНО ССЫЛКИ (С ТВОИМ СЕРВЕРОМ) ===
+  document.getElementById('cancelUrlBtn').addEventListener('click', () => {
+    document.getElementById('urlModal').classList.remove('open');
+  });
+
+  document.getElementById('importUrlBtn').addEventListener('click', async () => {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) return;
+
+    const btn = document.getElementById('importUrlBtn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Загрузка...';
+    btn.disabled = true;
+
+    // ТВОЙ ЛИЧНЫЙ СЕРВЕР COBALT
+    const COBALT_API = 'https://cobalt-tools-production-9395.up.railway.app/';
+
+    try {
+      const response = await fetch(COBALT_API, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: url,
+          downloadMode: 'audio',
+          audioFormat: 'mp3'
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'error') {
+        throw new Error(data.error?.code || 'Ошибка импорта');
+      }
+
+      let audioUrl = data.url;
+      if (!audioUrl && data.tunnel) {
+        audioUrl = data.tunnel;
+      }
+
+      if (!audioUrl) {
+        throw new Error('Не удалось получить ссылку на аудио');
+      }
+
+      // Добавляем трек
+      addTrackToUI('Импортированный трек', 'По ссылке', audioUrl);
+      
+      // Закрываем окно
+      document.getElementById('urlModal').classList.remove('open');
+      document.getElementById('urlInput').value = '';
+
+    } catch (err) {
+      console.error('Ошибка импорта:', err);
+      alert('Не удалось импортировать трек. Убедитесь, что ссылка публичная и поддерживается.\n\n' + err.message);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
+
+  fileInputAudio.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    handleFileUpload(file);
+    fileInputAudio.value = '';
+  });
+
+  fileInputVideo.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    handleFileUpload(file);
+    fileInputVideo.value = '';
+  });
+
+  async function handleFileUpload(file) {
+    let audioBlobUrl;
+    let fileName = file.name.replace(/\.[^/.]+$/, '');
+
+    if (file.type.startsWith('video/')) {
+      extractFilename.textContent = file.name;
+      extractText.textContent = 'Извлекаю звук из видео...';
+      extractOverlay.classList.add('open');
+
+      try {
+        audioBlobUrl = await extractAudioFromVideo(file);
+        extractOverlay.classList.remove('open');
+      } catch (err) {
+        console.error('Ошибка извлечения:', err);
+        extractText.textContent = 'Ошибка: не удалось извлечь звук';
+        setTimeout(() => extractOverlay.classList.remove('open'), 2500);
+        return;
+      }
+    } else {
+      audioBlobUrl = URL.createObjectURL(file);
+    }
+
     if (tempAudioUrl) URL.revokeObjectURL(tempAudioUrl);
-    tempAudioUrl = URL.createObjectURL(file);
+    tempAudioUrl = audioBlobUrl;
+
     trimAudio.src = tempAudioUrl;
-    editingTrackElement = null; 
-    currentEditorCoverUrl = ''; 
+    editingTrackElement = null;
+    currentEditorCoverUrl = '';
     editorFileName.textContent = file.name;
-    editorTitle.value = file.name.replace(/\.[^/.]+$/, "");
+    editorTitle.value = fileName;
     editorCoverPreview.classList.remove('has-cover');
     editorCoverImg.src = '';
+
     trimAudio.addEventListener('loadedmetadata', () => {
       tempAudioDuration = trimAudio.duration;
       startRange.value = 0;
@@ -1278,7 +1620,107 @@
       updateTrimUI();
       editorModal.classList.add('open');
     }, { once: true });
-  });
+  }
+
+  // === ИЗВЛЕЧЕНИЕ АУДИО ИЗ ВИДЕО ===
+  const extractOverlay = document.getElementById('extractOverlay');
+  const extractText = document.getElementById('extractText');
+  const extractFilename = document.getElementById('extractFilename');
+
+  async function extractAudioFromVideo(file) {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.muted = true;
+      video.playsInline = true;
+      video.crossOrigin = 'anonymous';
+
+      video.addEventListener('loadedmetadata', async () => {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+          const numberOfChannels = audioBuffer.numberOfChannels;
+          const sampleRate = audioBuffer.sampleRate;
+          const length = audioBuffer.length;
+
+          const offlineCtx = new OfflineAudioContext(numberOfChannels, length, sampleRate);
+          const bufferSource = offlineCtx.createBufferSource();
+          bufferSource.buffer = audioBuffer;
+          bufferSource.connect(offlineCtx.destination);
+          bufferSource.start(0);
+
+          const renderedBuffer = await offlineCtx.startRendering();
+          const wavBlob = audioBufferToWav(renderedBuffer);
+          const wavUrl = URL.createObjectURL(wavBlob);
+          resolve(wavUrl);
+        } catch (e) {
+          reject(e);
+        }
+      }, { once: true });
+
+      video.addEventListener('error', () => reject(new Error('Не удалось прочитать видео')));
+    });
+  }
+
+  function audioBufferToWav(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 1;
+    const bitDepth = 16;
+
+    let result;
+    if (numChannels === 2) {
+      result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+    } else {
+      result = buffer.getChannelData(0);
+    }
+
+    const bufferLength = result.length * (bitDepth / 8);
+    const dataView = new DataView(new ArrayBuffer(44 + bufferLength));
+
+    writeString(dataView, 0, 'RIFF');
+    dataView.setUint32(4, 36 + bufferLength, true);
+    writeString(dataView, 8, 'WAVE');
+    writeString(dataView, 12, 'fmt ');
+    dataView.setUint32(16, 16, true);
+    dataView.setUint16(20, format, true);
+    dataView.setUint16(22, numChannels, true);
+    dataView.setUint32(24, sampleRate, true);
+    dataView.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+    dataView.setUint16(32, numChannels * (bitDepth / 8), true);
+    dataView.setUint16(34, bitDepth, true);
+    writeString(dataView, 36, 'data');
+    dataView.setUint32(40, bufferLength, true);
+
+    let offset = 44;
+    for (let i = 0; i < result.length; i++) {
+      const sample = Math.max(-1, Math.min(1, result[i]));
+      dataView.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+      offset += 2;
+    }
+
+    return new Blob([dataView], { type: 'audio/wav' });
+  }
+
+  function interleave(inputL, inputR) {
+    const length = inputL.length + inputR.length;
+    const result = new Float32Array(length);
+    let index = 0, inputIndex = 0;
+    while (index < length) {
+      result[index++] = inputL[inputIndex];
+      result[index++] = inputR[inputIndex];
+      inputIndex++;
+    }
+    return result;
+  }
+
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
 
   function openEditor(trackElement) {
     editingTrackElement = trackElement;
@@ -1289,15 +1731,13 @@
     const endTime = parseFloat(trackElement.dataset.endTime) || null;
     editorTitle.value = name;
     editorFileName.textContent = 'Загруженный трек';
-    
+
     let thumbUrl = '';
     if (coverDataStr) {
-      try { 
-        let d = JSON.parse(coverDataStr); 
-        thumbUrl = d.url || d.sound || d.silent; 
-      } catch(e) { thumbUrl = coverDataStr; }
+      try { let d = JSON.parse(coverDataStr); thumbUrl = d.url || d.sound || d.silent; }
+      catch(e) { thumbUrl = coverDataStr; }
     }
-    
+
     if (thumbUrl) {
       currentEditorCoverUrl = thumbUrl;
       editorCoverPreview.classList.add('has-cover');
@@ -1377,7 +1817,6 @@
     editorModal.classList.remove('open');
     trimAudio.pause();
     previewPlayBtn.textContent = '▶';
-    document.getElementById('fileInput').value = '';
   });
 
   document.getElementById('saveEditorBtn').addEventListener('click', () => {
@@ -1389,42 +1828,31 @@
       editingTrackElement.dataset.name = finalName;
       editingTrackElement.dataset.startTime = startSec;
       editingTrackElement.dataset.endTime = endSec;
-      
       if (currentEditorCoverUrl) {
-        let oldCover = editingTrackElement.dataset.cover;
         let isNewUpload = editorCoverImg.src === currentEditorCoverUrl && editorCoverImg.src !== '';
-        if (isNewUpload) {
-           editingTrackElement.dataset.cover = JSON.stringify({mode: 'normal', url: currentEditorCoverUrl});
-        }
+        if (isNewUpload) editingTrackElement.dataset.cover = JSON.stringify({mode: 'normal', url: currentEditorCoverUrl});
       }
-      
       editingTrackElement.querySelector('.track-name').textContent = finalName;
-      
-      if (editingTrackElement.classList.contains('active')) {
-        selectTrack(editingTrackElement);
-      }
+      if (editingTrackElement.classList.contains('active')) selectTrack(editingTrackElement);
     } else {
       let coverData = currentEditorCoverUrl ? JSON.stringify({mode: 'normal', url: currentEditorCoverUrl}) : '';
       addTrackToUI(finalName, 'Обрезанный', tempAudioUrl, coverData, startSec, endSec);
       const firstItem = document.querySelector('.track-item');
       selectTrack(firstItem);
     }
-
     editorModal.classList.remove('open');
     trimAudio.pause();
     previewPlayBtn.textContent = '▶';
-    document.getElementById('fileInput').value = '';
   });
 
-  // === ОКНО ОБЛОЖКИ ===
   const coverModal = document.getElementById('coverModal');
   const coverTabs = document.querySelectorAll('.cover-tab');
   const tabContents = document.querySelectorAll('.tab-content');
-  
+
   const normalPreview = document.getElementById('normalPreview');
   const normalImg = document.getElementById('normalImg');
   const normalInput = document.getElementById('normalInput');
-  
+
   const cropCircleLeft = document.getElementById('cropCircleLeft');
   const cropImgLeft = document.getElementById('cropImgLeft');
   const cropInputLeft = document.getElementById('cropInputLeft');
@@ -1432,7 +1860,7 @@
   const cropCircleRight = document.getElementById('cropCircleRight');
   const cropImgRight = document.getElementById('cropImgRight');
   const cropInputRight = document.getElementById('cropInputRight');
-  
+
   const gifPreview = document.getElementById('gifPreview');
   const gifImg = document.getElementById('gifImg');
   const gifInput = document.getElementById('gifInput');
@@ -1451,9 +1879,6 @@
     });
   });
 
-  // === КАДРИРОВАНИЕ ===
-  
-  // Левый круг (Тишина)
   let isDraggingLeft = false;
   let startLeftX = 0, startLeftY = 0;
   let initialLeftX = 0, initialLeftY = 0;
@@ -1461,10 +1886,8 @@
   cropCircleLeft.addEventListener('mousedown', (e) => {
     if (!cropImgLeft.src) return;
     isDraggingLeft = true;
-    startLeftX = e.clientX;
-    startLeftY = e.clientY;
-    initialLeftX = leftPosX;
-    initialLeftY = leftPosY;
+    startLeftX = e.clientX; startLeftY = e.clientY;
+    initialLeftX = leftPosX; initialLeftY = leftPosY;
     cropCircleLeft.style.cursor = 'grabbing';
   });
 
@@ -1481,7 +1904,6 @@
     cropCircleLeft.style.cursor = 'grab';
   });
 
-  // Правый круг (Звук)
   let isDraggingRight = false;
   let startRightX = 0, startRightY = 0;
   let initialRightX = 0, initialRightY = 0;
@@ -1489,10 +1911,8 @@
   cropCircleRight.addEventListener('mousedown', (e) => {
     if (!cropImgRight.src) return;
     isDraggingRight = true;
-    startRightX = e.clientX;
-    startRightY = e.clientY;
-    initialRightX = rightPosX;
-    initialRightY = rightPosY;
+    startRightX = e.clientX; startRightY = e.clientY;
+    initialRightX = rightPosX; initialRightY = rightPosY;
     cropCircleRight.style.cursor = 'grabbing';
   });
 
@@ -1509,7 +1929,6 @@
     cropCircleRight.style.cursor = 'grab';
   });
 
-  // Загрузка фото
   cropInputLeft.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1521,7 +1940,10 @@
       leftPosX = 0; leftPosY = 0;
       document.getElementById('leftScale').value = 100;
       document.getElementById('leftScaleVal').innerText = '100%';
-      updateCrop();
+      leftScale = 1;
+      const apply = () => updateCrop();
+      if (cropImgLeft.complete && cropImgLeft.naturalWidth) apply();
+      else cropImgLeft.onload = apply;
     };
     reader.readAsDataURL(file);
     cropInputLeft.value = '';
@@ -1538,13 +1960,15 @@
       rightPosX = 0; rightPosY = 0;
       document.getElementById('rightScale').value = 100;
       document.getElementById('rightScaleVal').innerText = '100%';
-      updateCrop();
+      rightScale = 1;
+      const apply = () => updateCrop();
+      if (cropImgRight.complete && cropImgRight.naturalWidth) apply();
+      else cropImgRight.onload = apply;
     };
     reader.readAsDataURL(file);
     cropInputRight.value = '';
   });
 
-  // === ОСТАЛЬНЫЕ РЕЖИМЫ ===
   normalPreview.addEventListener('click', () => normalInput.click());
   normalInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -1598,17 +2022,16 @@
 
     if (coverMode === 'normal' && normalUrl) {
       finalCoverData = JSON.stringify({ mode: 'normal', url: normalUrl });
-    } 
+    }
     else if (coverMode === 'gif' && gifUrl) {
       finalCoverData = JSON.stringify({ mode: 'gif', url: gifUrl });
     }
     else if (coverMode === 'dichotomy' && silentUrl && soundUrl) {
-      finalCoverData = JSON.stringify({ 
-        mode: 'dichotomy', 
-        silent: silentUrl, 
-        sound: soundUrl,
-        leftX: leftPosX, leftY: leftPosY, leftScale: leftScale,
-        rightX: rightPosX, rightY: rightPosY, rightScale: rightScale
+      finalCoverData = JSON.stringify({
+        mode: 'dichotomy',
+        silent: silentUrl, sound: soundUrl,
+        leftX: leftPosX / EDITOR_CIRCLE_SIZE, leftY: leftPosY / EDITOR_CIRCLE_SIZE, leftScale: leftScale,
+        rightX: rightPosX / EDITOR_CIRCLE_SIZE, rightY: rightPosY / EDITOR_CIRCLE_SIZE, rightScale: rightScale
       });
     }
     else if (coverMode === 'full' && fullUrl) {
@@ -1617,11 +2040,8 @@
     }
 
     editingCoverTrack.dataset.cover = finalCoverData;
-    
-    // Обновляем карточку
-    let thumbUrl = '';
-    let colorSourceUrl = '';
 
+    let thumbUrl = '', colorSourceUrl = '';
     if (coverMode === 'normal') { thumbUrl = normalUrl; colorSourceUrl = normalUrl; }
     else if (coverMode === 'gif') { thumbUrl = gifUrl; colorSourceUrl = gifUrl; }
     else if (coverMode === 'dichotomy') { thumbUrl = soundUrl; colorSourceUrl = soundUrl; }
@@ -1631,7 +2051,6 @@
       editingCoverTrack.classList.add('has-cover');
       editingCoverTrack.querySelector('.track-cover-small').classList.add('has-cover');
       editingCoverTrack.querySelector('.track-cover-small img').src = thumbUrl;
-      
       getColorFromImage(colorSourceUrl, (colorStr) => {
         editingCoverTrack.style.setProperty('--track-color', `rgba(${colorStr}, 1)`);
       });
@@ -1641,10 +2060,7 @@
       editingCoverTrack.style.removeProperty('--track-color');
     }
 
-    if (editingCoverTrack.classList.contains('active')) {
-      applyCoverToPlayer(finalCoverData);
-    }
-
+    if (editingCoverTrack.classList.contains('active')) applyCoverToPlayer(finalCoverData);
     coverModal.classList.remove('open');
   });
 
